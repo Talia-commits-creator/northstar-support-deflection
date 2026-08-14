@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Northstar Retail Shoe Support Portal - Instant Order Tracking and Shoe Stock Availability Self-Service Hub">
+  <title>Northstar Retail - Shoe Support Portal</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="#" class="brand-logo" aria-label="Northstar Retail Homepage">
+        <div class="brand-icon">👟</div>
+        <div class="brand-text">
+          <h1>Northstar Retail</h1>
+          <span>Shoe Support Deflection MVP</span>
+        </div>
+      </a>
+      <div class="header-badge">Customer Self-Service Hub</div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="main-wrapper">
+    
+    <!-- Hero Header -->
+    <section class="hero-section">
+      <h2 class="hero-title">How can we help you today?</h2>
+      <p class="hero-subtitle">Track your shoe order progress or check instant size availability across our catalog.</p>
+    </section>
+
+    <!-- Tab Navigation Controls -->
+    <div class="tab-navigation-container">
+      <div class="tab-list" role="tablist" aria-label="Support Options">
+        <button 
+          id="tab-btn-order" 
+          class="tab-btn active" 
+          role="tab" 
+          aria-selected="true" 
+          aria-controls="order-panel"
+        >
+          <span>📦</span> Track an Order
+        </button>
+        <button 
+          id="tab-btn-stock" 
+          class="tab-btn" 
+          role="tab" 
+          aria-selected="false" 
+          aria-controls="stock-panel"
+        >
+          <span>👟</span> Check Shoe Availability
+        </button>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB PANEL 1: ORDER TRACKING                                        -->
+    <!-- =================================================================== -->
+    <section id="order-panel" class="tab-panel active" role="tabpanel" aria-labelledby="tab-btn-order">
+      <div class="search-card">
+        <div class="search-card-header">
+          <h2>Track Your Shoe Order</h2>
+          <p>Enter your Northstar Retail order number to view real-time status and delivery progress.</p>
+        </div>
+
+        <form id="order-form" class="search-form" action="#" method="GET">
+          <div class="input-group">
+            <span class="input-icon">🔍</span>
+            <input 
+              type="text" 
+              id="order-input" 
+              class="form-input" 
+              placeholder="e.g. ORD-1002" 
+              autocomplete="off"
+              aria-label="Order Number"
+              required
+            >
+          </div>
+          <button type="submit" id="order-submit" class="submit-btn">
+            Track Order
+          </button>
+        </form>
+
+        <!-- Quick Demo Chips for easy testing -->
+        <div class="demo-options">
+          <span>Quick Demo Orders:</span>
+          <button type="button" class="demo-chip" data-order="ORD-1001">ORD-1001 (Delivered)</button>
+          <button type="button" class="demo-chip" data-order="ORD-1002">ORD-1002 (Shipped)</button>
+          <button type="button" class="demo-chip" data-order="ORD-1003">ORD-1003 (Processing)</button>
+          <button type="button" class="demo-chip" data-order="ORD-1004">ORD-1004 (Ordered)</button>
+        </div>
+      </div>
+
+      <!-- Order Feedback Container (Loading & Errors) -->
+      <div id="order-feedback" class="feedback-container" aria-live="polite"></div>
+
+      <!-- Order Result Container -->
+      <div id="order-result" class="result-container"></div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB PANEL 2: SHOE STOCK AVAILABILITY                               -->
+    <!-- =================================================================== -->
+    <section id="stock-panel" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-stock" hidden>
+      <div class="search-card">
+        <div class="search-card-header">
+          <h2>Check Shoe & Size Availability</h2>
+          <p>Find out instantly if your favorite shoe model is in stock in your specific size.</p>
+        </div>
+
+        <form id="stock-form" class="search-form" action="#" method="GET">
+          <div class="input-group">
+            <span class="input-icon">🔎</span>
+            <input 
+              type="text" 
+              id="stock-input" 
+              class="form-input" 
+              placeholder="Search shoe name or SKU (e.g. Air Max, Samba, NK-AM270)..." 
+              autocomplete="off"
+              aria-label="Shoe search query"
+            >
+          </div>
+          <button type="submit" id="stock-submit" class="submit-btn">
+            Search Shoes
+          </button>
+        </form>
+
+        <!-- Brand Filters -->
+        <div class="filter-group-label">Filter by Brand:</div>
+        <div class="brand-filter-container">
+          <button type="button" class="brand-chip active" data-brand="all">All Brands</button>
+          <button type="button" class="brand-chip" data-brand="Nike">Nike</button>
+          <button type="button" class="brand-chip" data-brand="adidas">adidas</button>
+          <button type="button" class="brand-chip" data-brand="Puma">Puma</button>
+          <button type="button" class="brand-chip" data-brand="New Balance">New Balance</button>
+          <button type="button" class="brand-chip" data-brand="Converse">Converse</button>
+          <button type="button" class="brand-chip" data-brand="ASICS">ASICS</button>
+        </div>
+
+        <!-- Size Filters -->
+        <div class="filter-group-label" style="margin-top: 1rem;">Filter by Shoe Size:</div>
+        <div class="size-filter-container">
+          <button type="button" class="size-chip active" data-size="all">All Sizes</button>
+          <button type="button" class="size-chip" data-size="US 7">US 7</button>
+          <button type="button" class="size-chip" data-size="US 8">US 8</button>
+          <button type="button" class="size-chip" data-size="US 9">US 9</button>
+          <button type="button" class="size-chip" data-size="US 10">US 10</button>
+          <button type="button" class="size-chip" data-size="US 11">US 11</button>
+          <button type="button" class="size-chip" data-size="US 12">US 12</button>
+        </div>
+      </div>
+
+      <!-- Stock Feedback Container (Loading & Errors) -->
+      <div id="stock-feedback" class="feedback-container" aria-live="polite"></div>
+
+      <!-- Stock Results Container -->
+      <div id="stock-result" class="result-container"></div>
+    </section>
+
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <p>&copy; 2026 Northstar Retail Shoe Support Deflection MVP. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Main Application Logic Script -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
