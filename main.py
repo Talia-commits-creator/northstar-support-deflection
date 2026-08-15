@@ -3,9 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 try:
-    from app.data import ORDERS_DB
+    from app.data import ORDERS_DB, SHOES_DB
 except ImportError:
-    from data import ORDERS_DB
+    from data import ORDERS_DB, SHOES_DB
 
 app = FastAPI()
 app.add_middleware(
@@ -40,3 +40,8 @@ def get_order(order_id: str):
         if order["order_id"] == order_id:
             return order
     raise HTTPException(status_code=404, detail=f"Order '{order_id}' not found")
+
+
+@app.get("/inventory")
+def get_inventory():
+    return SHOES_DB

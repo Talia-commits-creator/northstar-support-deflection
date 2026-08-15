@@ -79,6 +79,61 @@
     </div>
   </div>
 
+  <div id="cart-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-label="Shopping cart">
+    <div class="modal-box cart-modal-box">
+      <button id="cart-close" class="modal-close" aria-label="Close cart">✕</button>
+      <div class="modal-icon-wrap">🛒</div>
+      <h2 class="modal-title">Your Cart</h2>
+      <div id="cart-list" class="cart-list" aria-live="polite"></div>
+      <div class="cart-summary">
+        <span>Total</span>
+        <strong id="cart-total">KSh 0</strong>
+      </div>
+      <button id="cart-checkout-btn" class="checkout-btn" type="button" hidden>Checkout</button>
+    </div>
+  </div>
+
+  <div id="checkout-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-label="Checkout">
+    <div class="modal-box checkout-modal-box">
+      <button id="checkout-close" class="modal-close" aria-label="Close checkout">✕</button>
+      <div class="modal-icon-wrap">💳</div>
+      <h2 class="modal-title">Checkout</h2>
+
+      <form id="checkout-form" class="checkout-form">
+        <label class="checkout-field">
+          <span>Full name</span>
+          <input id="checkout-name" type="text" name="fullName" placeholder="Jane Doe" required>
+        </label>
+
+        <label class="checkout-field">
+          <span>Shipping address</span>
+          <textarea id="checkout-address" name="shippingAddress" placeholder="Nairobi, Kenya" rows="3" required></textarea>
+        </label>
+
+        <label class="checkout-field">
+          <span>Phone number</span>
+          <input id="checkout-phone" type="tel" name="phoneNumber" placeholder="+254 712 345 678" required>
+        </label>
+
+        <div class="checkout-summary-box">
+          <div class="checkout-summary-label">Order summary</div>
+          <div id="checkout-summary" class="checkout-summary-list"></div>
+          <div class="checkout-total-row">
+            <span>Total</span>
+            <strong id="checkout-total">KSh 0</strong>
+          </div>
+        </div>
+
+        <div id="checkout-error" class="checkout-error" aria-live="polite"></div>
+
+        <div class="checkout-actions">
+          <button type="button" id="checkout-cancel" class="checkout-cancel-btn">Cancel</button>
+          <button type="submit" class="checkout-submit-btn">Place Order</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ============================================================
        HERO SECTION
        ============================================================ -->

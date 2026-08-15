@@ -11,6 +11,7 @@ import { OrderAPI, StockAPI } from './api.js';
 const DOM = {
   // Nav
   contactBtn:    document.getElementById('contact-btn'),
+  navCartBtn:    document.getElementById('nav-cart-btn'),
   cartCount:     document.getElementById('cart-count'),
   navSearchBtn:  document.getElementById('nav-search-btn'),
   navToggle:     document.getElementById('nav-toggle-btn'),
@@ -19,6 +20,25 @@ const DOM = {
   // Contact Modal
   contactModal:  document.getElementById('contact-modal'),
   contactClose:  document.getElementById('contact-close'),
+
+  // Cart Modal
+  cartModal:     document.getElementById('cart-modal'),
+  cartClose:     document.getElementById('cart-close'),
+  cartList:      document.getElementById('cart-list'),
+  cartTotal:     document.getElementById('cart-total'),
+  cartCheckoutBtn: document.getElementById('cart-checkout-btn'),
+
+  // Checkout Modal
+  checkoutModal: document.getElementById('checkout-modal'),
+  checkoutClose: document.getElementById('checkout-close'),
+  checkoutForm:  document.getElementById('checkout-form'),
+  checkoutName:  document.getElementById('checkout-name'),
+  checkoutAddress: document.getElementById('checkout-address'),
+  checkoutPhone: document.getElementById('checkout-phone'),
+  checkoutSummary: document.getElementById('checkout-summary'),
+  checkoutTotal: document.getElementById('checkout-total'),
+  checkoutError: document.getElementById('checkout-error'),
+  checkoutCancel: document.getElementById('checkout-cancel'),
 
   // Collection
   stockInput:    document.getElementById('stock-input'),
@@ -50,10 +70,11 @@ const state = {
   selectedBrand:     'all',
   selectedSize:      'all',
   searchQuery:       '',
-  cartItems:         0,
+  cart:              [],   // [{ shoeId, name, brand, size, price, quantity, image }]
   liveStock:         {},   // { [shoeId]: number }
   catalog:           [],   // full shoe catalog reference
   stockTickerStarted: false,
+  nextOrderNumber:   1005,
 };
 
 /* ==========================================================================
@@ -62,6 +83,8 @@ const state = {
 document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
   initContact();
+  initCart();
+  initCheckout();
   initCollection();
   initOrderTracking();
   fetchShoeStock();   // loads catalog + renders grid + dashboard
@@ -130,7 +153,10 @@ function initContact() {
     if (e.target === DOM.contactModal) closeModal();
   });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Escape') {
+      closeModal();
+      closeCart();
+    }
   });
 }
 function openModal() {
@@ -142,6 +168,298 @@ function closeModal() {
   if (!DOM.contactModal) return;
   DOM.contactModal.classList.remove('open');
   setTimeout(() => DOM.contactModal.setAttribute('hidden', ''), 200);
+}
+
+function initCart() {
+  DOM.navCartBtn?.addEventListener('click', openCart);
+  DOM.cartClose?.addEventListener('click', closeCart);
+  DOM.cartModal?.addEventListener('click', e => {
+    if (e.target === DOM.cartModal) closeCart();
+  });
+  DOM.cartCheckoutBtn?.addEventListener('click', () => {
+    if (state.cart.length === 0) return;
+    openCheckout();
+  });
+  renderCart();
+}
+
+function openCart() {
+  if (!DOM.cartModal) return;
+  DOM.cartModal.removeAttribute('hidden');
+  requestAnimationFrame(() => DOM.cartModal.classList.add('open'));
+}
+
+function closeCart() {
+  if (!DOM.cartModal) return;
+  DOM.cartModal.classList.remove('open');
+  setTimeout(() => DOM.cartModal.setAttribute('hidden', ''), 200);
+}
+
+function initCheckout() {
+  DOM.checkoutClose?.addEventListener('click', closeCheckout);
+  DOM.checkoutCancel?.addEventListener('click', closeCheckout);
+  DOM.checkoutModal?.addEventListener('click', e => {
+    if (e.target === DOM.checkoutModal) closeCheckout();
+  });
+  DOM.checkoutForm?.addEventListener('submit', handlePlaceOrder);
+}
+
+function openCheckout() {
+  if (!DOM.checkoutModal || state.cart.length === 0) return;
+
+  if (DOM.checkoutError) DOM.checkoutError.textContent = '';
+  if (DOM.checkoutForm) DOM.checkoutForm.reset();
+  renderCheckoutSummary();
+  DOM.checkoutModal.removeAttribute('hidden');
+  requestAnimationFrame(() => DOM.checkoutModal.classList.add('open'));
+}
+
+function closeCheckout() {
+  if (!DOM.checkoutModal) return;
+  DOM.checkoutModal.classList.remove('open');
+  if (DOM.checkoutError) DOM.checkoutError.textContent = '';
+  setTimeout(() => DOM.checkoutModal.setAttribute('hidden', ''), 200);
+}
+
+function getCartCount() {
+  return state.cart.reduce((total, item) => total + item.quantity, 0);
+}
+
+function getCartTotal() {
+  return state.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+}
+
+function renderCart() {
+  if (DOM.cartCount) DOM.cartCount.textContent = getCartCount();
+  if (!DOM.cartList || !DOM.cartTotal || !DOM.cartCheckoutBtn) return;
+
+  const hasItems = state.cart.length > 0;
+  DOM.cartCheckoutBtn.hidden = !hasItems;
+
+  if (!hasItems) {
+    DOM.cartList.innerHTML = '<p class="cart-empty-message">Your cart is empty.</p>';
+    DOM.cartTotal.textContent = 'KSh 0';
+    return;
+  }
+
+  DOM.cartList.innerHTML = state.cart.map((item, index) => `
+    <div class="cart-item">
+      <img
+        src="${escapeAttr(item.image || '')}"
+        alt="${escapeHTML(item.name)}"
+        class="cart-item-image"
+        onerror="this.style.opacity='0.35'"
+      >
+      <div class="cart-item-copy">
+        <div class="cart-item-name">${escapeHTML(item.name)}</div>
+        <div class="cart-item-meta">${escapeHTML(item.brand)} · Size ${escapeHTML(item.size)}</div>
+        <div class="cart-item-price">KSh ${Number(item.price).toLocaleString()}</div>
+      </div>
+      <div class="cart-item-meta cart-item-qty">Qty: ${item.quantity}</div>
+      <div class="cart-item-actions">
+        <div class="cart-item-subtotal">KSh ${(item.price * item.quantity).toLocaleString()}</div>
+        <button class="cart-item-remove" data-cart-index="${index}" type="button">Remove</button>
+      </div>
+    </div>
+  `).join('');
+
+  DOM.cartList.querySelectorAll('.cart-item-remove').forEach(button => {
+    button.addEventListener('click', () => {
+      const itemIndex = Number(button.dataset.cartIndex);
+      state.cart.splice(itemIndex, 1);
+      renderCart();
+    });
+  });
+
+  DOM.cartTotal.textContent = `KSh ${getCartTotal().toLocaleString()}`;
+  renderCheckoutSummary();
+}
+
+function renderCheckoutSummary() {
+  if (!DOM.checkoutSummary || !DOM.checkoutTotal) return;
+
+  if (state.cart.length === 0) {
+    DOM.checkoutSummary.innerHTML = '<div class="checkout-empty">Your cart is empty.</div>';
+    DOM.checkoutTotal.textContent = 'KSh 0';
+    return;
+  }
+
+  DOM.checkoutSummary.innerHTML = state.cart.map(item => `
+    <div class="checkout-summary-item">
+      <span>${escapeHTML(item.name)} × ${item.quantity} (${escapeHTML(item.size)})</span>
+      <strong>KSh ${(item.price * item.quantity).toLocaleString()}</strong>
+    </div>
+  `).join('');
+
+  DOM.checkoutTotal.textContent = `KSh ${getCartTotal().toLocaleString()}`;
+}
+
+function removeCartItem(index) {
+  if (index >= 0 && index < state.cart.length) {
+    state.cart.splice(index, 1);
+    renderCart();
+  }
+}
+
+function setCheckoutError(message) {
+  if (DOM.checkoutError) {
+    DOM.checkoutError.textContent = message;
+  }
+}
+
+function getVisibleCatalog() {
+  const search = state.searchQuery.trim().toLowerCase();
+  const brand = state.selectedBrand;
+  const size = state.selectedSize;
+
+  return state.catalog.filter(shoe => {
+    const matchSearch = !search ||
+      shoe.name.toLowerCase().includes(search) ||
+      shoe.brand.toLowerCase().includes(search) ||
+      shoe.sku.toLowerCase().includes(search) ||
+      shoe.color.toLowerCase().includes(search);
+
+    const matchBrand = brand === 'all' || shoe.brand.toLowerCase() === brand.toLowerCase();
+    let matchSize = true;
+
+    if (size !== 'all') {
+      const sizeMatch = shoe.sizes && shoe.sizes.find(sizeObj => sizeObj.size.toLowerCase() === size.toLowerCase());
+      matchSize = Boolean(sizeMatch && sizeMatch.quantity > 0);
+    }
+
+    return matchSearch && matchBrand && matchSize;
+  });
+}
+
+function generateNextOrderNumber() {
+  const next = state.nextOrderNumber;
+  state.nextOrderNumber += 1;
+  return `ORD-${next}`;
+}
+
+function getCartItemAvailability(item) {
+  const shoe = state.catalog.find(entry => entry.id === item.shoeId);
+  if (!shoe) return { available: 0, label: item.name };
+
+  if (item.size && item.size !== '—') {
+    const sizeEntry = shoe.sizes?.find(sizeObj => sizeObj.size.toLowerCase() === item.size.toLowerCase());
+    const available = sizeEntry ? sizeEntry.quantity : 0;
+    return { available, label: `${item.name} (${item.size})` };
+  }
+
+  const sizeEntry = shoe.sizes?.find(sizeObj => Number(sizeObj.quantity) > 0) ?? shoe.sizes?.[0];
+  const available = sizeEntry ? sizeEntry.quantity : (state.liveStock[shoe.id] !== undefined ? state.liveStock[shoe.id] : (shoe.totalStock ?? 0));
+  return { available, label: `${item.name} (${sizeEntry?.size || 'selected size'})` };
+}
+
+function handlePlaceOrder(event) {
+  event.preventDefault();
+
+  if (state.cart.length === 0) {
+    setCheckoutError('Your cart is empty. Add at least one item before checking out.');
+    return;
+  }
+
+  const fullName = DOM.checkoutName?.value.trim() || '';
+  const shippingAddress = DOM.checkoutAddress?.value.trim() || '';
+  const phoneNumber = DOM.checkoutPhone?.value.trim() || '';
+
+  if (!fullName || !shippingAddress || !phoneNumber) {
+    setCheckoutError('Please complete your full name, shipping address, and phone number.');
+    return;
+  }
+
+  const insufficientItems = [];
+  state.cart.forEach(item => {
+    const { available, label } = getCartItemAvailability(item);
+    if (available < item.quantity) {
+      insufficientItems.push(`${label} is unavailable. Available: ${available}.`);
+    }
+  });
+
+  if (insufficientItems.length > 0) {
+    setCheckoutError(insufficientItems[0]);
+    return;
+  }
+
+  const orderNumber = generateNextOrderNumber();
+  const orderDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const estimatedDelivery = new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  state.cart.forEach(item => {
+    const shoe = state.catalog.find(entry => entry.id === item.shoeId);
+    if (!shoe) return;
+
+    if (item.size !== '—') {
+      const sizeEntry = shoe.sizes?.find(sizeObj => sizeObj.size.toLowerCase() === item.size.toLowerCase());
+      if (sizeEntry) {
+        sizeEntry.quantity = Math.max(0, sizeEntry.quantity - item.quantity);
+      }
+    }
+
+    const currentTotal = state.liveStock[shoe.id] !== undefined ? state.liveStock[shoe.id] : (shoe.totalStock ?? 0);
+    const updatedTotal = Math.max(0, currentTotal - item.quantity);
+    state.liveStock[shoe.id] = updatedTotal;
+    if (typeof shoe.totalStock === 'number') {
+      shoe.totalStock = updatedTotal;
+    }
+  });
+
+  const order = {
+    orderNumber,
+    orderDate,
+    status: 'Ordered',
+    statusStep: 1,
+    estimatedDelivery,
+    shippingAddress,
+    customerName: fullName,
+    phoneNumber,
+    items: state.cart.map(item => ({
+      id: item.shoeId,
+      brand: item.brand,
+      name: item.name,
+      size: item.size,
+      price: item.price,
+      quantity: item.quantity,
+      imageIcon: '👟'
+    })),
+    totalAmount: getCartTotal(),
+    currency: 'KES',
+    carrier: 'Standard Ground Delivery',
+    trackingNumber: 'Generating...',
+    productName: state.cart[0]?.name || 'Northstar Shoe',
+    size: state.cart[0]?.size || '—',
+    customer_name: fullName,
+    phone_number: phoneNumber,
+  };
+
+  OrderAPI.registerOrder(order);
+
+  const visibleShoes = getVisibleCatalog();
+  renderShoeGrid(visibleShoes.length ? visibleShoes : state.catalog);
+  renderInventoryDashboard(state.catalog);
+
+  state.cart = [];
+  renderCart();
+  closeCart();
+  closeCheckout();
+
+  const successHtml = `
+    <div class="order-success-box">
+      <strong>Order placed successfully!</strong>
+      <p>Order number: <strong>${order.orderNumber}</strong></p>
+      <p>Total: KSh ${Number(order.totalAmount).toLocaleString()}</p>
+      <button type="button" class="order-success-track" data-order-number="${order.orderNumber}">Track Order</button>
+    </div>
+  `;
+  DOM.orderFeedback.innerHTML = successHtml;
+
+  const trackButton = DOM.orderFeedback.querySelector('.order-success-track');
+  trackButton?.addEventListener('click', () => {
+    document.getElementById('track-order')?.scrollIntoView({ behavior: 'smooth' });
+    if (DOM.orderInput) DOM.orderInput.value = order.orderNumber;
+    fetchOrder(order.orderNumber);
+  });
 }
 
 /* ==========================================================================
@@ -208,10 +526,10 @@ async function fetchShoeStock() {
     });
 
     renderInventoryDashboard(state.catalog.length ? state.catalog : catalogSource);
-    if (!state.stockTickerStarted) {
-      state.stockTickerStarted = true;
-      startLiveStockTicker();
-    }
+    // if (!state.stockTickerStarted) {
+    //   state.stockTickerStarted = true;
+    //   startLiveStockTicker();
+    // }
   }
 
   if (!response.data || response.data.length === 0) {
@@ -243,9 +561,19 @@ function renderShoeGrid(shoes) {
 }
 
 function renderProductCard(shoe) {
-  const liveTotal   = state.liveStock[shoe.id] !== undefined ? state.liveStock[shoe.id] : shoe.totalStock;
+  let selectedSizeMatch = null;
+  let liveTotal = state.liveStock[shoe.id] !== undefined ? state.liveStock[shoe.id] : shoe.totalStock;
+
+  if (state.selectedSize !== 'all') {
+    selectedSizeMatch = shoe.sizes?.find(sizeObj => sizeObj.size.toLowerCase() === state.selectedSize.toLowerCase());
+    liveTotal = selectedSizeMatch ? selectedSizeMatch.quantity : 0;
+  }
+
   const liveStatus  = getLiveStatus(liveTotal);
-  const stockPct    = shoe.originalStock > 0 ? Math.round((liveTotal / shoe.originalStock) * 100) : 0;
+  const stockBase   = state.selectedSize !== 'all' && selectedSizeMatch
+    ? selectedSizeMatch.quantity
+    : shoe.originalStock;
+  const stockPct    = stockBase > 0 ? Math.round((liveTotal / stockBase) * 100) : 0;
   const barColor    = getBarColor(stockPct);
   const badgeHtml   = getInlineBadge(liveStatus, liveTotal);
 
@@ -315,6 +643,9 @@ function renderProductCard(shoe) {
           class="add-to-cart-btn"
           data-shoe-id="${shoe.id}"
           data-shoe-name="${escapeAttr(shoe.name)}"
+          data-shoe-brand="${escapeAttr(shoe.brand)}"
+          data-shoe-price="${Number(shoe.price || 0)}"
+          data-shoe-image="${escapeAttr(shoe.imagePlaceholder || '')}"
           ${liveStatus === 'out_of_stock' ? 'disabled' : ''}
         >
           ${liveStatus === 'out_of_stock' ? 'Out of Stock' : 'Add to Cart'}
@@ -333,8 +664,43 @@ function renderStars(rating) {
 
 function handleAddToCart(btn) {
   if (btn.disabled) return;
-  state.cartItems++;
-  if (DOM.cartCount) DOM.cartCount.textContent = state.cartItems;
+
+  const shoeId = btn.dataset.shoeId;
+  const shoe = state.catalog.find(item => item.id === shoeId) || {
+    id: shoeId,
+    name: btn.dataset.shoeName || 'Northstar Shoe',
+    brand: btn.dataset.shoeBrand || 'Northstar',
+    price: Number(btn.dataset.shoePrice || 0),
+    imagePlaceholder: btn.dataset.shoeImage || ''
+  };
+
+  const fallbackSize = shoe.sizes && shoe.sizes.length > 0
+    ? (shoe.sizes.find(sizeObj => Number(sizeObj.quantity) > 0)?.size ?? shoe.sizes[0].size)
+    : '—';
+
+  const selectedSize = state.selectedSize !== 'all'
+    ? state.selectedSize
+    : fallbackSize;
+
+  const cartItem = {
+    shoeId: shoe.id,
+    name: shoe.name || btn.dataset.shoeName || 'Northstar Shoe',
+    brand: shoe.brand || btn.dataset.shoeBrand || 'Northstar',
+    size: selectedSize,
+    price: Number(shoe.price || btn.dataset.shoePrice || 0),
+    quantity: 1,
+    image: shoe.imagePlaceholder || btn.dataset.shoeImage || ''
+  };
+
+  const existingIndex = state.cart.findIndex(item => item.shoeId === cartItem.shoeId && item.size === cartItem.size);
+
+  if (existingIndex >= 0) {
+    state.cart[existingIndex].quantity += 1;
+  } else {
+    state.cart.push(cartItem);
+  }
+
+  renderCart();
 
   btn.textContent = '✓ Added!';
   btn.classList.add('added');
@@ -547,6 +913,18 @@ function initOrderTracking() {
 function normalizeOrderPayload(order) {
   if (!order) return null;
 
+  const normalizedStatus = (() => {
+    const value = (order.status || '').trim();
+    const map = {
+      ordered: 'Ordered',
+      processing: 'Processing',
+      shipped: 'Shipped',
+      delivered: 'Delivered',
+      'out for delivery': 'Out for Delivery',
+    };
+    return map[value.toLowerCase()] || value || 'Ordered';
+  })();
+
   const statusStepMap = {
     Ordered: 1,
     Processing: 2,
@@ -560,10 +938,10 @@ function normalizeOrderPayload(order) {
     orderNumber: order.orderNumber || order.order_id || 'N/A',
     productName: order.productName || order.product_name || 'Northstar Shoe',
     size: order.size || '—',
-    status: order.status || 'Processing',
+    status: normalizedStatus,
     statusStep: Number.isFinite(order.statusStep)
       ? order.statusStep
-      : (statusStepMap[order.status] ?? 1),
+      : (statusStepMap[normalizedStatus] ?? 1),
     estimatedDelivery: order.estimatedDelivery || order.estimated_delivery || '—',
     carrier: order.carrier || '—',
     trackingNumber: order.trackingNumber || order.tracking_number || '—',
