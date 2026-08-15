@@ -1,0 +1,32 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+
+try:
+    from app.data import ORDERS_DB
+except ImportError:
+    from data import ORDERS_DB
+
+app = FastAPI()
+
+
+class OrderStatusResponse(BaseModel):
+    order_id: str
+    product_name: str
+    size: str
+    status: str
+    carrier: str
+    tracking_number: str
+    estimated_delivery: str
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+
+@app.get("/orders/{order_id}", response_model=OrderStatusResponse)
+def get_order(order_id: str):
+    for order in ORDERS_DB:
+        if order["order_id"] == order_id:
+            return order
+    raise HTTPException(status_code=404, detail=f"Order '{order_id}' not found")
