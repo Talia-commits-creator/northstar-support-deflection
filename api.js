@@ -106,6 +106,7 @@ export const StockAPI = {
           success: true,
           data: matches,
           count: matches.length,
+          allData: MOCK_SHOES_CATALOG,
           appliedFilters: { query: cleanedQuery, brand: brandFilter, size: sizeFilter }
         });
       }, SIMULATED_LATENCY_MS);

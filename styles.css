@@ -150,17 +150,42 @@ ul { list-style: none; }
    5. HERO SECTION
    ========================================================================== */
 .hero {
-  background: var(--cream);
-  padding: 4.5rem 0 0;
+  background: linear-gradient(180deg, var(--cream) 0%, #f3f1eb 100%);
+  padding: 5.5rem 0 2.5rem;
   overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(198,255,0,0.13), transparent 36%);
+  pointer-events: none;
 }
 .hero-inner {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 1.5rem;
+  position: relative;
+  z-index: 1;
 }
 .hero-heading-block {
-  margin-bottom: 2.5rem;
+  margin-bottom: 3rem;
+}
+.hero-home-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.8rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid rgba(17,17,17,0.12);
+  border-radius: var(--radius-full);
+  background: rgba(255,255,255,0.65);
+  color: var(--black);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
 }
 .hero-title {
   font-family: 'Barlow', sans-serif;
@@ -171,6 +196,7 @@ ul { list-style: none; }
   letter-spacing: -1px;
   color: var(--black);
   margin-bottom: 0;
+  max-width: 900px;
 }
 .hero-title .hl {
   color: var(--lime);
@@ -180,10 +206,13 @@ ul { list-style: none; }
 }
 .hero-lower {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1.3fr) auto;
   gap: 3rem;
   align-items: flex-start;
   padding-bottom: 2.5rem;
+}
+.hero-about {
+  max-width: 620px;
 }
 .hero-about-label {
   font-size: 0.78rem;
@@ -196,7 +225,7 @@ ul { list-style: none; }
 .hero-about-text {
   font-size: 0.9rem;
   color: var(--text-secondary);
-  max-width: 460px;
+  max-width: 560px;
   line-height: 1.65;
 }
 .hero-cta-block {
@@ -205,12 +234,13 @@ ul { list-style: none; }
   align-items: flex-end;
   gap: 0.75rem;
   flex-shrink: 0;
+  padding-top: 0.25rem;
 }
 .hero-cta-btn {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.9rem 1.75rem;
+  padding: 1rem 1.9rem;
   background: var(--black);
   color: var(--white);
   font-family: 'Space Grotesk', sans-serif;
@@ -322,6 +352,7 @@ ul { list-style: none; }
 #collection {
   background: var(--white);
   border-top: 1px solid var(--border);
+  padding-top: 0.25rem;
 }
 .collection-filters {
   display: flex;

@@ -70,15 +70,17 @@ document.addEventListener('DOMContentLoaded', () => {
    ========================================================================== */
 function initNavigation() {
   // Highlight active section on scroll
-  const sections = ['top', 'collection', 'track-order', 'inventory'];
+  const sections = ['home', 'about-anchor', 'collection', 'track-order', 'inventory'];
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          const id = entry.target.id || 'top';
+          const id = entry.target.id || 'home';
           DOM.navLinks.forEach(link => {
             const href = link.getAttribute('href').replace('#', '');
-            link.classList.toggle('active', href === id || (id === 'top' && href === 'top'));
+            const isHomeActive = href === 'home' && (id === 'home' || id === 'top');
+            const isAboutActive = href === 'about-anchor' && id === 'about-anchor';
+            link.classList.toggle('active', href === id || isHomeActive || isAboutActive);
           });
         }
       });
@@ -171,13 +173,16 @@ async function fetchShoeStock() {
     return;
   }
 
-  // Seed live stock on first load
-  if (Object.keys(state.liveStock).length === 0 && response.allData) {
-    response.allData.forEach(shoe => {
+  const catalogSource = (response.allData && response.allData.length > 0)
+    ? response.allData
+    : (response.data && response.data.length > 0 ? response.data : state.catalog);
+
+  if (catalogSource && catalogSource.length > 0 && state.catalog.length === 0) {
+    state.catalog = catalogSource;
+    catalogSource.forEach(shoe => {
       state.liveStock[shoe.id] = shoe.totalStock;
     });
-    state.catalog = response.allData;
-    renderInventoryDashboard(response.allData);
+    renderInventoryDashboard(state.catalog);
     startLiveStockTicker();
   }
 
