@@ -13,6 +13,7 @@ const DOM = {
   contactBtn:    document.getElementById('contact-btn'),
   cartCount:     document.getElementById('cart-count'),
   navSearchBtn:  document.getElementById('nav-search-btn'),
+  navToggle:     document.getElementById('nav-toggle-btn'),
   navLinks:      document.querySelectorAll('.nav-link'),
 
   // Contact Modal
@@ -46,12 +47,13 @@ const DOM = {
    App State
    ========================================================================== */
 const state = {
-  selectedBrand: 'all',
-  selectedSize:  'all',
-  searchQuery:   '',
-  cartItems:     0,
-  liveStock:     {},   // { [shoeId]: number }
-  catalog:       [],   // full shoe catalog reference
+  selectedBrand:     'all',
+  selectedSize:      'all',
+  searchQuery:       '',
+  cartItems:         0,
+  liveStock:         {},   // { [shoeId]: number }
+  catalog:           [],   // full shoe catalog reference
+  stockTickerStarted: false,
 };
 
 /* ==========================================================================
@@ -92,6 +94,21 @@ function initNavigation() {
     if (el) observer.observe(el);
   });
 
+  if (DOM.navToggle) {
+    DOM.navToggle.addEventListener('click', () => {
+      const isOpen = document.querySelector('.nav-links')?.classList.toggle('open');
+      DOM.navToggle.setAttribute('aria-expanded', String(Boolean(isOpen)));
+    });
+  }
+
+  DOM.navLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      const navList = document.querySelector('.nav-links');
+      navList?.classList.remove('open');
+      if (DOM.navToggle) DOM.navToggle.setAttribute('aria-expanded', 'false');
+    });
+  });
+
   // Cart button feedback
   if (DOM.navSearchBtn) {
     DOM.navSearchBtn.addEventListener('click', () => {
@@ -117,10 +134,12 @@ function initContact() {
   });
 }
 function openModal() {
+  if (!DOM.contactModal) return;
   DOM.contactModal.removeAttribute('hidden');
   requestAnimationFrame(() => DOM.contactModal.classList.add('open'));
 }
 function closeModal() {
+  if (!DOM.contactModal) return;
   DOM.contactModal.classList.remove('open');
   setTimeout(() => DOM.contactModal.setAttribute('hidden', ''), 200);
 }
@@ -177,13 +196,22 @@ async function fetchShoeStock() {
     ? response.allData
     : (response.data && response.data.length > 0 ? response.data : state.catalog);
 
-  if (catalogSource && catalogSource.length > 0 && state.catalog.length === 0) {
-    state.catalog = catalogSource;
-    catalogSource.forEach(shoe => {
-      state.liveStock[shoe.id] = shoe.totalStock;
+  if (catalogSource && catalogSource.length > 0) {
+    if (state.catalog.length === 0) {
+      state.catalog = catalogSource;
+    }
+
+    catalogSource.forEach((shoe) => {
+      if (state.liveStock[shoe.id] === undefined) {
+        state.liveStock[shoe.id] = shoe.totalStock;
+      }
     });
-    renderInventoryDashboard(state.catalog);
-    startLiveStockTicker();
+
+    renderInventoryDashboard(state.catalog.length ? state.catalog : catalogSource);
+    if (!state.stockTickerStarted) {
+      state.stockTickerStarted = true;
+      startLiveStockTicker();
+    }
   }
 
   if (!response.data || response.data.length === 0) {
@@ -333,9 +361,9 @@ function renderInventoryDashboard(shoes) {
     const stockPct   = shoe.originalStock > 0 ? Math.round((liveTotal / shoe.originalStock) * 100) : 0;
     const barClass   = liveStatus === 'in_stock' ? 'bar-available' : liveStatus === 'low_stock' ? 'bar-low' : 'bar-out';
 
-    if (liveStatus === 'in_stock')    countAvailable++;
-    else if (liveStatus === 'low_stock') countLow++;
-    else                               countOut++;
+    if (liveStatus === 'in_stock')    countAvailable += liveTotal;
+    else if (liveStatus === 'low_stock') countLow += liveTotal;
+    else                               countOut += liveTotal;
     totalPairs += liveTotal;
 
     return `
@@ -437,9 +465,9 @@ function tickStock() {
   state.catalog.forEach(s => {
     const lt = state.liveStock[s.id] ?? s.totalStock;
     const st = getLiveStatus(lt);
-    if (st === 'in_stock')    cAvail++;
-    else if (st === 'low_stock') cLow++;
-    else                      cOut++;
+    if (st === 'in_stock')    cAvail += lt;
+    else if (st === 'low_stock') cLow += lt;
+    else                      cOut += lt;
     cTotal += lt;
   });
   updateInvSummary(cAvail, cLow, cOut, cTotal);
@@ -516,6 +544,34 @@ function initOrderTracking() {
   });
 }
 
+function normalizeOrderPayload(order) {
+  if (!order) return null;
+
+  const statusStepMap = {
+    Ordered: 1,
+    Processing: 2,
+    Shipped: 3,
+    Delivered: 4,
+    'Out for Delivery': 3,
+  };
+
+  return {
+    ...order,
+    orderNumber: order.orderNumber || order.order_id || 'N/A',
+    productName: order.productName || order.product_name || 'Northstar Shoe',
+    size: order.size || '—',
+    status: order.status || 'Processing',
+    statusStep: Number.isFinite(order.statusStep)
+      ? order.statusStep
+      : (statusStepMap[order.status] ?? 1),
+    estimatedDelivery: order.estimatedDelivery || order.estimated_delivery || '—',
+    carrier: order.carrier || '—',
+    trackingNumber: order.trackingNumber || order.tracking_number || '—',
+    shippingAddress: order.shippingAddress ?? null,
+    totalAmount: order.totalAmount ?? order.total_amount ?? null,
+  };
+}
+
 async function fetchOrder(orderNum) {
   DOM.orderFeedback.innerHTML = renderLoading('Looking up your order…');
   DOM.orderResult.innerHTML   = '';
@@ -528,28 +584,30 @@ async function fetchOrder(orderNum) {
     return;
   }
 
-  DOM.orderResult.innerHTML = renderOrderCard(response.data);
+  DOM.orderResult.innerHTML = renderOrderCard(normalizeOrderPayload(response.data));
 }
 
 function renderOrderCard(order) {
-  const statusClass  = getStatusClass(order.statusStep);
-  const statusLabel  = order.status;
-  const progressPct  = Math.round(((order.statusStep - 1) / 3) * 100);
+  const safeOrder = order || {};
+  const statusStep = Number.isFinite(safeOrder.statusStep) ? safeOrder.statusStep : 1;
+  const statusClass = getStatusClass(statusStep);
+  const statusLabel = safeOrder.status || 'Processing';
+  const progressPct = Math.round(((statusStep - 1) / 3) * 100);
+  const hasShippingAddress = Boolean(safeOrder.shippingAddress);
+  const hasTotalAmount = Number.isFinite(Number(safeOrder.totalAmount)) && Number(safeOrder.totalAmount) > 0;
 
   return `
     <div class="order-result-card">
-      <!-- Top bar -->
       <div class="order-result-top">
         <div>
-          <div class="order-result-num">Order ${escapeHTML(order.orderNumber)}</div>
-          <div class="order-result-date">Placed on ${escapeHTML(order.orderDate)}</div>
+          <div class="order-result-num">Order ${escapeHTML(safeOrder.orderNumber || 'N/A')}</div>
+          <div class="order-result-date">${escapeHTML(safeOrder.productName || 'Northstar Shoe')}</div>
         </div>
         <span class="status-badge ${statusClass}">
           <span class="status-dot"></span> ${escapeHTML(statusLabel)}
         </span>
       </div>
 
-      <!-- Timeline -->
       <div class="order-timeline">
         <div class="timeline-label">Order Progress</div>
         <div class="timeline-track">
@@ -560,12 +618,12 @@ function renderOrderCard(order) {
             { label: 'Shipped',    step: 3 },
             { label: 'Delivered',  step: 4 },
           ].map(({ label, step }) => {
-            const cls = order.statusStep > step
+            const cls = statusStep > step
               ? 'completed'
-              : order.statusStep === step
+              : statusStep === step
                 ? 'active'
                 : '';
-            const icon = order.statusStep > step ? '✓' : step;
+            const icon = statusStep > step ? '✓' : step;
             return `
               <div class="timeline-step ${cls}">
                 <div class="step-circle">${icon}</div>
@@ -576,51 +634,53 @@ function renderOrderCard(order) {
         </div>
       </div>
 
-      <!-- Details grid -->
       <div class="order-details-grid">
         <div class="order-info-block">
-          <div class="order-info-title">Shipping Info</div>
+          <div class="order-info-title">Order Details</div>
           <div class="order-info-row">
-            <span class="oir-label">Est. Delivery</span>
-            <span class="oir-value">${escapeHTML(order.estimatedDelivery)}</span>
+            <span class="oir-label">Order ID</span>
+            <span class="oir-value">${escapeHTML(safeOrder.orderNumber || 'N/A')}</span>
           </div>
-          ${order.actualDelivery ? `
-            <div class="order-info-row">
-              <span class="oir-label">Delivered On</span>
-              <span class="oir-value">${escapeHTML(order.actualDelivery)}</span>
-            </div>
-          ` : ''}
+          <div class="order-info-row">
+            <span class="oir-label">Product</span>
+            <span class="oir-value">${escapeHTML(safeOrder.productName || 'Northstar Shoe')}</span>
+          </div>
+          <div class="order-info-row">
+            <span class="oir-label">Size</span>
+            <span class="oir-value">${escapeHTML(safeOrder.size || '—')}</span>
+          </div>
+          <div class="order-info-row">
+            <span class="oir-label">Status</span>
+            <span class="oir-value">${escapeHTML(statusLabel)}</span>
+          </div>
           <div class="order-info-row">
             <span class="oir-label">Carrier</span>
-            <span class="oir-value">${escapeHTML(order.carrier)}</span>
+            <span class="oir-value">${escapeHTML(safeOrder.carrier || '—')}</span>
           </div>
           <div class="order-info-row">
             <span class="oir-label">Tracking #</span>
-            <span class="oir-value">${escapeHTML(order.trackingNumber)}</span>
+            <span class="oir-value">${escapeHTML(safeOrder.trackingNumber || '—')}</span>
           </div>
-          <div class="order-info-row" style="align-items:flex-start; margin-top:0.25rem;">
-            <span class="oir-label">Destination</span>
-            <span class="oir-value">${escapeHTML(order.shippingAddress)}</span>
+          <div class="order-info-row">
+            <span class="oir-label">Est. Delivery</span>
+            <span class="oir-value">${escapeHTML(safeOrder.estimatedDelivery || '—')}</span>
           </div>
-        </div>
-
-        <div class="order-info-block">
-          <div class="order-info-title">Items (${order.items.length})</div>
-          ${order.items.map(item => `
-            <div class="order-item-row">
-              <div class="order-item-icon">${item.imageIcon || '👟'}</div>
-              <div>
-                <div class="order-item-name">${escapeHTML(item.brand)} ${escapeHTML(item.name)}</div>
-                <div class="order-item-sku">SKU: ${escapeHTML(item.sku)}${item.size ? ` · ${escapeHTML(item.size)}` : ''}</div>
-              </div>
-              <div class="order-item-price">KSh ${item.price.toLocaleString()}</div>
+          ${hasShippingAddress ? `
+            <div class="order-info-row" style="align-items:flex-start; margin-top:0.25rem;">
+              <span class="oir-label">Destination</span>
+              <span class="oir-value">${escapeHTML(safeOrder.shippingAddress)}</span>
             </div>
-          `).join('')}
-          <div class="order-total-row">
-            <span class="order-total-label">Order Total</span>
-            <span class="order-total-amount">KSh ${order.totalAmount.toLocaleString()}</span>
-          </div>
+          ` : ''}
         </div>
+        ${hasTotalAmount ? `
+          <div class="order-info-block">
+            <div class="order-info-title">Payment</div>
+            <div class="order-total-row">
+              <span class="order-total-label">Order Total</span>
+              <span class="order-total-amount">KSh ${Number(safeOrder.totalAmount).toLocaleString()}</span>
+            </div>
+          </div>
+        ` : ''}
       </div>
     </div>
   `;
