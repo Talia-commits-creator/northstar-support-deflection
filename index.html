@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Northstar Retail — Timeless elegance crafted for every moment. Shop our collection of premium shoes, track orders, and check live stock availability.">
+  <title>Northstar Shoes — Timeless Elegance</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       NAVBAR
+       ============================================================ -->
+  <nav class="navbar" id="top">
+    <div class="nav-container">
+      <!-- Logo -->
+      <a href="#top" class="nav-logo" aria-label="Northstar Shoes Home">
+        NORTHSTAR
+        <span class="nav-logo-divider"></span>
+        <span>SHOES</span>
+      </a>
+
+      <!-- Nav Links -->
+      <button class="nav-toggle-btn" id="nav-toggle-btn" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+
+      <ul class="nav-links" role="navigation" aria-label="Main navigation">
+        <li><a href="#home" class="nav-link active">Home</a></li>
+        <li><a href="#about-anchor" class="nav-link">About</a></li>
+        <li><a href="#collection" class="nav-link">Our Collection</a></li>
+        <li><a href="#track-order" class="nav-link">Track Order</a></li>
+        <li><a href="#inventory" class="nav-link">Stock Dashboard</a></li>
+      </ul>
+
+      <!-- Actions -->
+      <div class="nav-actions">
+        <button class="nav-icon-btn" id="nav-search-btn" title="Search" aria-label="Search shoes">🔍</button>
+        <button class="nav-icon-btn" id="nav-cart-btn"   title="Cart"   aria-label="Shopping cart">
+          🛒<span class="cart-count" id="cart-count">0</span>
+        </button>
+        <button id="contact-btn" class="contact-btn-nav" aria-label="Contact us">
+          📞 <span>Contact</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============================================================
+       CONTACT MODAL
+       ============================================================ -->
+  <div id="contact-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-label="Contact Northstar Shoes">
+    <div class="modal-box">
+      <button id="contact-close" class="modal-close" aria-label="Close">✕</button>
+      <div class="modal-icon-wrap">📬</div>
+      <h2 class="modal-title">Get In Touch</h2>
+      <p class="modal-subtitle">Available Mon – Sat, 8 am – 6 pm EAT. We usually respond within 2 hours.</p>
+
+      <a href="tel:+2547123456789" class="contact-item">
+        <div class="contact-item-icon">📞</div>
+        <div class="contact-item-info">
+          <div class="contact-item-label">Phone / WhatsApp</div>
+          <div class="contact-item-value">+254 712 345 6789</div>
+        </div>
+        <span class="contact-arrow">→</span>
+      </a>
+
+      <a href="mailto:northstar@gmail.com" class="contact-item">
+        <div class="contact-item-icon">✉️</div>
+        <div class="contact-item-info">
+          <div class="contact-item-label">Email Us</div>
+          <div class="contact-item-value">northstar@gmail.com</div>
+        </div>
+        <span class="contact-arrow">→</span>
+      </a>
+
+      <p class="modal-note">💡 For fastest response, WhatsApp is recommended.</p>
+    </div>
+  </div>
+
+  <div id="cart-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-label="Shopping cart">
+    <div class="modal-box cart-modal-box">
+      <button id="cart-close" class="modal-close" aria-label="Close cart">✕</button>
+      <div class="modal-icon-wrap">🛒</div>
+      <h2 class="modal-title">Your Cart</h2>
+      <div id="cart-list" class="cart-list" aria-live="polite"></div>
+      <div class="cart-summary">
+        <span>Total</span>
+        <strong id="cart-total">KSh 0</strong>
+      </div>
+      <button id="cart-checkout-btn" class="checkout-btn" type="button" hidden>Checkout</button>
+    </div>
+  </div>
+
+  <div id="checkout-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-label="Checkout">
+    <div class="modal-box checkout-modal-box">
+      <button id="checkout-close" class="modal-close" aria-label="Close checkout">✕</button>
+      <div class="modal-icon-wrap">💳</div>
+      <h2 class="modal-title">Checkout</h2>
+
+      <form id="checkout-form" class="checkout-form">
+        <label class="checkout-field">
+          <span>Full name</span>
+          <input id="checkout-name" type="text" name="fullName" placeholder="Jane Doe" required>
+        </label>
+
+        <label class="checkout-field">
+          <span>Shipping address</span>
+          <textarea id="checkout-address" name="shippingAddress" placeholder="Nairobi, Kenya" rows="3" required></textarea>
+        </label>
+
+        <label class="checkout-field">
+          <span>Phone number</span>
+          <input id="checkout-phone" type="tel" name="phoneNumber" placeholder="+254 712 345 678" required>
+        </label>
+
+        <div class="checkout-summary-box">
+          <div class="checkout-summary-label">Order summary</div>
+          <div id="checkout-summary" class="checkout-summary-list"></div>
+          <div class="checkout-total-row">
+            <span>Total</span>
+            <strong id="checkout-total">KSh 0</strong>
+          </div>
+        </div>
+
+        <div id="checkout-error" class="checkout-error" aria-live="polite"></div>
+
+        <div class="checkout-actions">
+          <button type="button" id="checkout-cancel" class="checkout-cancel-btn">Cancel</button>
+          <button type="submit" class="checkout-submit-btn">Place Order</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       HERO SECTION
+       ============================================================ -->
+  <section class="hero" id="home" aria-label="Home page">
+    <div class="hero-inner">
+      <!-- Big headline -->
+      <div class="hero-heading-block">
+        <div class="hero-home-tag">Home</div>
+        <h1 class="hero-title">
+          TIMELESS ELEGANCE<br>
+          CRAFTED FOR <span class="hl">EVERY</span> MOMENT
+        </h1>
+      </div>
+
+      <!-- About text + CTA -->
+      <div class="hero-lower" id="about-anchor">
+        <div class="hero-about">
+          <div class="hero-about-label">About Us</div>
+          <p class="hero-about-text">
+            Welcome to your go-to destination for quality, trendy, and affordable footwear for both gents and ladies.
+            We bring you stylish shoes made for everyday comfort, confidence, and your unique look — all at prices that won't break the bank.
+            From casual kicks to smart and trendy styles, we carefully select footwear that combines quality, affordability, and modern fashion.
+            Step into style with us and find your perfect pair today!
+          </p>
+        </div>
+        <div class="hero-cta-block">
+          <a href="#collection" class="hero-cta-btn">
+            VIEW OUR COLLECTION <span class="arrow">→</span>
+          </a>
+          <div class="hero-badge-live">
+            <span class="hero-badge-dot"></span> Live Stock Updates
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="hero-stats">
+      <div class="hero-stats-inner">
+        <div class="hero-stat">
+          <div class="hero-stat-number">8</div>
+          <div>Shoe Models</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-number" id="hero-stock-total">96</div>
+          <div>Pairs In Stock</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-number">6</div>
+          <div>Top Brands</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-number">24/7</div>
+          <div>Self-Service</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-number">⚡</div>
+          <div>Fast Delivery</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       OUR COLLECTION SECTION
+       ============================================================ -->
+  <section id="collection">
+    <div class="section-wrapper">
+
+      <!-- Header -->
+      <div class="section-header">
+        <h2 class="section-title">Our Signature <span>Pieces</span></h2>
+        <a href="#collection" class="section-see-all">See all →</a>
+      </div>
+
+      <!-- Filters -->
+      <div class="collection-filters" id="collection-filters">
+        <!-- Search -->
+        <div class="collection-search-wrap">
+          <span class="collection-search-icon">🔍</span>
+          <input
+            type="text"
+            id="stock-input"
+            class="collection-search-input"
+            placeholder="Search shoes, brands, SKU…"
+            autocomplete="off"
+            aria-label="Search shoe catalog"
+          >
+        </div>
+
+        <div class="filter-divider"></div>
+
+        <!-- Brand filters -->
+        <button type="button" class="filter-chip brand-chip active" data-brand="all">All</button>
+        <button type="button" class="filter-chip brand-chip" data-brand="Nike">Nike</button>
+        <button type="button" class="filter-chip brand-chip" data-brand="adidas">adidas</button>
+        <button type="button" class="filter-chip brand-chip" data-brand="Puma">Puma</button>
+        <button type="button" class="filter-chip brand-chip" data-brand="New Balance">New Balance</button>
+        <button type="button" class="filter-chip brand-chip" data-brand="Santoni">Santoni</button>
+
+        <div class="filter-divider"></div>
+
+        <!-- Size filters -->
+        <button type="button" class="size-chip-collection size-chip active" data-size="all">All Sizes</button>
+        <button type="button" class="size-chip-collection size-chip" data-size="US 7">US 7</button>
+        <button type="button" class="size-chip-collection size-chip" data-size="US 8">US 8</button>
+        <button type="button" class="size-chip-collection size-chip" data-size="US 9">US 9</button>
+        <button type="button" class="size-chip-collection size-chip" data-size="US 10">US 10</button>
+        <button type="button" class="size-chip-collection size-chip" data-size="US 11">US 11</button>
+      </div>
+
+      <!-- Feedback -->
+      <div id="stock-feedback" aria-live="polite"></div>
+
+      <!-- Product grid -->
+      <div id="stock-result"></div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ORDER TRACKING SECTION
+       ============================================================ -->
+  <section id="track-order">
+    <div class="section-wrapper">
+      <div class="order-track-grid">
+
+        <!-- Left: intro -->
+        <div class="order-track-intro">
+          <h2 class="section-title" style="margin-bottom:0.75rem;">Track Your <span>Order</span></h2>
+          <p>Enter your Northstar order number to see real-time status and delivery progress. We update your tracking automatically.</p>
+
+          <div class="order-info-badges">
+            <div class="order-info-badge">
+              <div class="order-info-badge-icon">📦</div>
+              <div>Real-time order status updates</div>
+            </div>
+            <div class="order-info-badge">
+              <div class="order-info-badge-icon">🚚</div>
+              <div>Carrier tracking number included</div>
+            </div>
+            <div class="order-info-badge">
+              <div class="order-info-badge-icon">📍</div>
+              <div>Destination and delivery date</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: form + result -->
+        <div>
+          <div class="order-track-form-card">
+            <label for="order-input" class="order-form-label">Order Number</label>
+            <form id="order-form" action="#" method="GET">
+              <div class="order-input-row">
+                <input
+                  type="text"
+                  id="order-input"
+                  class="order-number-input"
+                  placeholder="e.g. ORD-1002"
+                  autocomplete="off"
+                  aria-label="Order Number"
+                  required
+                >
+                <button type="submit" id="order-submit" class="order-track-submit-btn">Track →</button>
+              </div>
+            </form>
+
+            <div class="demo-chips-row">
+              <span class="demo-chips-label">Quick Demo:</span>
+              <button type="button" class="demo-chip" data-order="ORD-1001">ORD-1001 (Processing)</button>
+              <button type="button" class="demo-chip" data-order="ORD-1002">ORD-1002 (Shipped)</button>
+              <button type="button" class="demo-chip" data-order="ORD-1003">ORD-1003 (Out for Delivery)</button>
+              <button type="button" class="demo-chip" data-order="ORD-1004">ORD-1004 (Delivered)</button>
+              <button type="button" class="demo-chip" data-order="ORD-1005">ORD-1005 (Processing)</button>
+            </div>
+          </div>
+
+          <!-- Order feedback & result -->
+          <div id="order-feedback" aria-live="polite"></div>
+          <div id="order-result" class="order-result-wrapper"></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       INVENTORY DASHBOARD SECTION
+       ============================================================ -->
+  <section id="inventory">
+    <div class="section-wrapper">
+
+      <div class="section-header">
+        <h2 class="section-title">Stock <span>Dashboard</span></h2>
+        <div class="inv-header-meta">
+          <div class="inv-legend"><span class="inv-dot inv-dot-available"></span> Available</div>
+          <div class="inv-legend"><span class="inv-dot inv-dot-low"></span> Low Stock</div>
+          <div class="inv-legend"><span class="inv-dot inv-dot-out"></span> Out of Stock</div>
+        </div>
+      </div>
+
+      <!-- Summary cards -->
+      <div class="inv-summary-cards" id="inv-summary-cards">
+        <div class="inv-summary-card">
+          <div class="inv-summary-number inv-n-available" id="inv-count-available">–</div>
+          <div class="inv-summary-label">✅ Available</div>
+        </div>
+        <div class="inv-summary-card">
+          <div class="inv-summary-number inv-n-low" id="inv-count-low">–</div>
+          <div class="inv-summary-label">⚠️ Low Stock</div>
+        </div>
+        <div class="inv-summary-card">
+          <div class="inv-summary-number inv-n-out" id="inv-count-out">–</div>
+          <div class="inv-summary-label">❌ Out of Stock</div>
+        </div>
+        <div class="inv-summary-card">
+          <div class="inv-summary-number inv-n-total" id="inv-count-total">–</div>
+          <div class="inv-summary-label">👟 Total Pairs</div>
+        </div>
+      </div>
+
+      <!-- Dashboard table -->
+      <div class="inv-table" id="inv-table">
+        <div class="inv-table-header">
+          <div>Product</div>
+          <div>Brand</div>
+          <div>Stock Level</div>
+          <div style="text-align:center;">Qty</div>
+          <div>Status</div>
+        </div>
+        <div id="inv-table-body">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FOOTER
+       ============================================================ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div>
+          <div class="footer-logo">NORTHSTAR SHOES</div>
+          <div class="footer-tagline">Timeless elegance crafted for every moment.</div>
+        </div>
+        <div class="footer-contact-links">
+          <a href="tel:+2547123456789">📞 +254 712 345 6789</a>
+          <a href="mailto:northstar@gmail.com">✉️ northstar@gmail.com</a>
+          <a href="#collection">👟 Our Collection</a>
+          <a href="#track-order">📦 Track an Order</a>
+        </div>
+      </div>
+      <p class="footer-copy">&copy; 2026 Northstar Retail. All rights reserved. Shoe Support Deflection MVP.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
