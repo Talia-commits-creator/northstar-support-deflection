@@ -2,12 +2,12 @@
  * Northstar Retail - Data API Service Abstraction (Shoe E-Commerce MVP)
  * 
  * ARCHITECTURE NOTE FOR BACKEND INTEGRATION:
- * This file encapsulates all data fetching logic. Currently, it retrieves data
- * from the isolated temporary mockData.js module with simulated network delay.
+ * This file encapsulates all data fetching logic. Order tracking now connects to the FastAPI.backend.
+ * Stock checking still uses temporary mock data until backend integration.
  * 
- * To connect to the live backend API in the future:
- * Simply replace the internal Promise resolution inside trackOrder() and checkStock()
- * with standard fetch() calls (e.g. fetch(`/api/v1/shoes?brand=${brand}&size=${size}`)).
+ * Backend integration is being completed incrementally.
+ * Order tracking uses the FastAPI backend.
+ * Stock checking currently uses mock data.
  * The frontend UI (app.js) depends strictly on the return structure defined here.
  */
 
@@ -24,34 +24,46 @@ export const OrderAPI = {
    * @returns {Promise<{ success: boolean, data?: object, error?: string }>}
    */
   async trackOrder(orderNumber) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const cleanedQuery = (orderNumber || '').trim().toUpperCase();
+  const cleanedQuery = (orderNumber || '').trim().toUpperCase();
 
-        if (!cleanedQuery) {
-          resolve({
-            success: false,
-            error: 'Please enter a valid order number (e.g., ORD-1002).'
-          });
-          return;
-        }
-
-        const foundOrder = MOCK_ORDERS[cleanedQuery];
-
-        if (foundOrder) {
-          resolve({
-            success: true,
-            data: foundOrder
-          });
-        } else {
-          resolve({
-            success: false,
-            error: `No order found matching "${cleanedQuery}". Please check your order number or confirmation email.`
-          });
-        }
-      }, SIMULATED_LATENCY_MS);
-    });
+  if (!cleanedQuery) {
+    return {
+      success: false,
+      error: 'Please enter a valid order number (e.g., ORD-1002).'
+    };
   }
+
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:8000/orders/${encodeURIComponent(cleanedQuery)}`
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return {
+          success: false,
+          error: `No order found matching "${cleanedQuery}". Please check your order number or confirmation email.`
+        };
+      }
+
+      throw new Error(`Backend returned ${response.status}`);
+    }
+
+    const order = await response.json();
+
+    return {
+      success: true,
+      data: order
+    };
+  } catch (error) {
+    console.error('Order tracking error:', error);
+
+    return {
+      success: false,
+      error: 'Unable to connect to the order tracking service. Please try again.'
+    };
+  }
+  },
 };
 
 export const StockAPI = {
